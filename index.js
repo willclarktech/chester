@@ -1,6 +1,7 @@
-const onDragStart = game => (_, piece) =>
-  console.log(piece, piece.match(/^w/), game.game_over()) ||
-  !game.game_over() && piece.match(/^w/)
+let board
+
+const onDragStart = game => (_, piece, position, orientation) =>
+  !game.game_over() && !!piece.match(orientation === 'white' ? /^w/ : /^b/)
 
 const onDrop = game => (from, to) => {
   const move = game.move({
@@ -12,6 +13,9 @@ const onDrop = game => (from, to) => {
     ? true
     : 'snapback'
 }
+
+const onSnapEnd = game => () =>
+  board.position(game.fen())
 
 const getComputerMove = game => {
     const moves = game.moves()
@@ -29,11 +33,10 @@ const play = game => board => {
   if (game.turn() === 'b') {
     getComputerMove(game)
     board.position(game.fen())
-    console.log(game.ascii())
   }
 
   return game.game_over()
-    ? console.log('done')
+    ? true
     : waitAndPlayAgain(game)(board)
 }
 
@@ -42,16 +45,16 @@ const run = () => {
   if (!window.ChessBoard) return console.error('Could not find ChessBoard')
 
   const game = new Chess()
-  console.log(game.ascii())
 
   const options = {
     position: 'start',
     draggable: true,
     onDragStart: onDragStart(game),
     onDrop: onDrop(game),
+    onSnapEnd: onSnapEnd(game),
   }
 
-  const board = new ChessBoard('board', options)
+  board = new ChessBoard('board', options)
 
   return window.setTimeout(play(game).bind(null, (board)), 500)
 }
