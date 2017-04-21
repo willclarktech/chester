@@ -23,21 +23,21 @@ const getComputerMove = game => {
     game.move(move)
 }
 
-const waitAndPlayAgain = game => board =>
+const waitAndPlayAgain = humanPlaysWhite => game => board =>
   window.setTimeout(
-    play(game).bind(null, (board)),
+    play(humanPlaysWhite)(game).bind(null, (board)),
     500
   )
 
-const play = game => board => {
-  if (game.turn() === 'b') {
+const play = humanPlaysWhite => game => board => {
+  if (game.turn() === (humanPlaysWhite ? 'b' : 'w')) {
     getComputerMove(game)
     board.position(game.fen())
   }
 
   return game.game_over()
     ? true
-    : waitAndPlayAgain(game)(board)
+    : waitAndPlayAgain(humanPlaysWhite)(game)(board)
 }
 
 const run = () => {
@@ -45,9 +45,11 @@ const run = () => {
   if (!window.ChessBoard) return console.error('Could not find ChessBoard')
 
   const game = new Chess()
+  const humanPlaysWhite = Math.floor(Math.random() * 2)
 
   const options = {
     position: 'start',
+    orientation: humanPlaysWhite ? 'white' : 'black',
     draggable: true,
     onDragStart: onDragStart(game),
     onDrop: onDrop(game),
@@ -56,6 +58,6 @@ const run = () => {
 
   board = new ChessBoard('board', options)
 
-  return window.setTimeout(play(game).bind(null, (board)), 500)
+  return window.setTimeout(play(humanPlaysWhite)(game).bind(null, (board)), 500)
 }
 run()
