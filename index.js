@@ -40,12 +40,14 @@ const play = humanPlaysWhite => game => board => {
     : waitAndPlayAgain(humanPlaysWhite)(game)(board)
 }
 
-const run = () => {
+const run = (color) => {
   if (!window.Chess) return console.error('Could not find Chess')
   if (!window.ChessBoard) return console.error('Could not find ChessBoard')
 
   const game = new Chess()
-  const humanPlaysWhite = Math.floor(Math.random() * 2)
+  const humanPlaysWhite = color
+    ? color === 'white'
+    : Math.floor(Math.random() * 2)
 
   const options = {
     position: 'start',
@@ -60,4 +62,5 @@ const run = () => {
 
   return window.setTimeout(play(humanPlaysWhite)(game).bind(null, (board)), 500)
 }
+
 run()
