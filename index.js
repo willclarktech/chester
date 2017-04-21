@@ -1,5 +1,16 @@
-const getPlayerMove = game => {
+const onDragStart = game => (_, piece) =>
+  console.log(piece, piece.match(/^w/), game.game_over()) ||
+  !game.game_over() && piece.match(/^w/)
 
+const onDrop = game => (from, to) => {
+  const move = game.move({
+    from,
+    to,
+    promotion: 'q',
+  })
+  return move
+    ? true
+    : 'snapback'
 }
 
 const getComputerMove = game => {
@@ -21,21 +32,26 @@ const play = game => board => {
     console.log(game.ascii())
   }
 
-  if (!game.game_over())
-    return waitAndPlayAgain(game)(board)
+  return game.game_over()
+    ? console.log('done')
+    : waitAndPlayAgain(game)(board)
 }
 
 const run = () => {
   if (!window.Chess) return console.error('Could not find Chess')
   if (!window.ChessBoard) return console.error('Could not find ChessBoard')
 
+  const game = new Chess()
+  console.log(game.ascii())
+
   const options = {
     position: 'start',
+    draggable: true,
+    onDragStart: onDragStart(game),
+    onDrop: onDrop(game),
   }
 
   const board = new ChessBoard('board', options)
-  const game = new Chess()
-  console.log(game.ascii())
 
   return window.setTimeout(play(game).bind(null, (board)), 500)
 }
