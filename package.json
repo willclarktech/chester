@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chess.js": "^0.10.2"
+    "chess.js": "^0.10.2",
+    "jquery": "^3.2.1"
   }
 }
