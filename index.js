@@ -1,27 +1,61 @@
+// Need to declare this here for onSnapEnd
 let board
+
+// ChessBoard
 
 const onDragStart = game => (_, piece, position, orientation) =>
   !game.game_over() && !!piece.match(orientation === 'white' ? /^w/ : /^b/)
 
-const onDrop = game => (from, to) => {
-  const move = game.move({
+const onDrop = game => (from, to) =>
+  game.move({
     from,
     to,
     promotion: 'q',
   })
-  return move
     ? true
     : 'snapback'
-}
 
 const onSnapEnd = game => () =>
   board.position(game.fen())
 
-const getComputerMove = game => {
-    const moves = game.moves()
-    const move = moves[Math.floor(Math.random() * moves.length)]
-    game.move(move)
+////////////////////////////////////////////////////////////////
+
+// AI
+
+const scorePosition = fen => {
+  const position = fen.split(' ')[0]
+  const whitePawns = (position.match(/P/g) || '').length
+  const blackPawns = (position.match(/p/g) || '').length
+  return blackPawns - whitePawns
 }
+
+const evaluateMove = game => move => {
+  game.move(move)
+  const score = scorePosition(game.fen())
+  game.undo()
+  return score
+}
+
+const compareMoves = game => (current, move) => {
+  const score = evaluateMove(game)(move)
+  return score > current.score
+    ? { move, score }
+    : current
+}
+
+const getBestMove = game =>
+  game
+    .moves()
+    .reduce(compareMoves(game), { score: -10e3 })
+    .move
+
+////////////////////////////////////////////////////////////////
+
+// Game play
+
+const getComputerMove = game =>
+    game
+      .move(getBestMove(game))
 
 const waitAndPlayAgain = humanPlaysWhite => game => board =>
   window.setTimeout(
@@ -63,4 +97,4 @@ const run = (color) => {
   return window.setTimeout(play(humanPlaysWhite)(game).bind(null, (board)), 500)
 }
 
-run()
+run('white')
