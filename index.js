@@ -15,7 +15,8 @@ const onDrop = game => (from, to) =>
     ? true
     : 'snapback'
 
-const onSnapEnd = game => () =>
+const onSnapEnd = game => (_, position, piece) =>
+  console.log('you:', position, piece) ||
   board.position(game.fen())
 
 const onChange = human => game => () => {
@@ -66,25 +67,24 @@ const evaluateBoard = player => game =>
       : scorePosition(game.fen())
 
 const minimax = depth => game => {
-  // console.log(game.fen())
   const player = game.turn()
   const moves = game.moves()
-  return moves
+  return moves.length
     ? moves
       .reduce((best, move) => {
-      game.move(move)
-      const score = depth
-        ? - minimax(depth - 1)(game).score
-        : - evaluateBoard(player)(game)
-      game.undo()
+        game.move(move)
+        const score = depth
+          ? - minimax(depth - 1)(game).score
+          : - evaluateBoard(player)(game)
+        game.undo()
 
-      const result = { move, score }
-      return !best || score > best.score
-        ? result
-        : score === best.score
-          ? Math.floor(Math.random() * 2) ? result : best
-          : best
-    }, null)
+        const result = { move, score }
+        return !best || score > best.score
+          ? result
+          : score === best.score
+            ? Math.floor(Math.random() * 2) ? result : best
+            : best
+      }, null)
     : { score: evaluateBoard(player)(game) }
 }
 
