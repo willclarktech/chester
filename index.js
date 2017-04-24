@@ -66,23 +66,30 @@ const evaluateBoard = player => game =>
       : scorePosition(game.fen())
 
 const minimax = depth => game => {
+  // console.log(game.fen())
   const player = game.turn()
   const moves = game.moves()
-  if (!depth) {
-    return moves.reduce((best, move) => {
+  return moves
+    ? moves
+      .reduce((best, move) => {
       game.move(move)
-      const score = - evaluateBoard(player)(game)
-      console.log(move, score)
+      const score = depth
+        ? - minimax(depth - 1)(game).score
+        : - evaluateBoard(player)(game)
       game.undo()
+
+      const result = { move, score }
       return !best || score > best.score
-        ? { move, score }
-        : best
+        ? result
+        : score === best.score
+          ? Math.floor(Math.random() * 2) ? result : best
+          : best
     }, null)
-  }
+    : { score: evaluateBoard(player)(game) }
 }
 
 const getBestMove = game => {
-  const result = minimax(0)(game)
+  const result = minimax(2)(game)
   console.log('chose:', result)
   return result && result.move
 }
@@ -109,7 +116,7 @@ const run = (color) => {
   const game = new Chess()
   const human = color
     ? color === 'white' ? 'w' : 'b'
-    : ['w', 'b'][Math.floor(Math.random() * 2)]
+    : Math.floor(Math.random() * 2) ? 'w' : 'b'
 
   const options = {
     position: 'start',
