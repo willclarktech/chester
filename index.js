@@ -21,12 +21,33 @@ const onSnapEnd = game => () =>
 ////////////////////////////////////////////////////////////////
 
 // AI
+const piecesToScore = ['P', 'N', 'B', 'R', 'Q']
+
+const getWeight = piece => {
+  switch (piece) {
+    case 'Q':
+      return 9
+    case 'R':
+      return 5
+    case 'N':
+    case 'B':
+      return 3
+    default:
+      return 1
+  }
+}
+
+const scoreColor = position => color => piecesToScore
+  .map(piece => {
+    const regex = new RegExp(color === 'white' ? piece : piece.toLowerCase(), 'g')
+    return (position.match(regex) || '').length * getWeight(piece)
+  })
+  .reduce((sum, pieceScore) => sum + pieceScore, 0)
 
 const scorePosition = fen => {
   const position = fen.split(' ')[0]
-  const whitePawns = (position.match(/P/g) || '').length
-  const blackPawns = (position.match(/p/g) || '').length
-  return blackPawns - whitePawns
+  const score = scoreColor(position)
+  return score('black') - score('white')
 }
 
 const evaluateMove = game => move => {
