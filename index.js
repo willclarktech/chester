@@ -18,9 +18,15 @@ const onDrop = game => (from, to) =>
 const onSnapEnd = game => () =>
   board.position(game.fen())
 
+const onChange = human => game => () => {
+  game.load(board.fen())
+  window.setTimeout(play(human)(game).bind(null, board), 100)
+}
+
 ////////////////////////////////////////////////////////////////
 
 // AI
+
 const piecesToScore = ['P', 'N', 'B', 'R', 'Q']
 
 const getWeight = piece => {
@@ -39,68 +45,61 @@ const getWeight = piece => {
 
 const scoreColor = position => color => piecesToScore
   .map(piece => {
-    const regex = new RegExp(color === 'white' ? piece : piece.toLowerCase(), 'g')
+    const regex = new RegExp(color === 'w' ? piece : piece.toLowerCase(), 'g')
     return (position.match(regex) || '').length * getWeight(piece)
   })
   .reduce((sum, pieceScore) => sum + pieceScore, 0)
 
 const scorePosition = fen => {
-  const position = fen.split(' ')[0]
+  const [position, player] = fen.split(' ')
   const score = scoreColor(position)
-  return score('black') - score('white')
+  return score(player) - score(player === 'b' ? 'w' : 'b')
 }
 
-const evaluateMove = game => move => {
-  game.move(move)
-  const score =
-    game.in_checkmate()
-      ? game.turn() === 'w'
-        ? 1000
-        : - 1000
-      : game.in_stalemate() || game.in_draw()
-        ? 0
-        : scorePosition(game.fen())
+const evaluateBoard = player => game =>
+  game.in_checkmate()
+    ? game.turn() === player
+      ? -1000
+      : 1000
+    : game.in_stalemate() || game.in_draw()
+      ? 0
+      : scorePosition(game.fen())
 
-  game.undo()
-  return score
+const minimax = depth => game => {
+  const player = game.turn()
+  const moves = game.moves()
+  if (!depth) {
+    return moves.reduce((best, move) => {
+      game.move(move)
+      const score = - evaluateBoard(player)(game)
+      console.log(move, score)
+      game.undo()
+      return !best || score > best.score
+        ? { move, score }
+        : best
+    }, null)
+  }
 }
 
-const compareMoves = game => (current, move) => {
-  const score = evaluateMove(game)(move)
-  return score > current.score
-    ? { move, score }
-    : current
+const getBestMove = game => {
+  const result = minimax(0)(game)
+  console.log('chose:', result)
+  return result && result.move
 }
-
-const getBestMove = game =>
-  game
-    .moves()
-    .reduce(compareMoves(game), { score: -10e3 })
-    .move
 
 ////////////////////////////////////////////////////////////////
 
 // Game play
 
-const getComputerMove = game =>
-    game
-      .move(getBestMove(game))
-
-const waitAndPlayAgain = humanPlaysWhite => game => board =>
-  window.setTimeout(
-    play(humanPlaysWhite)(game).bind(null, (board)),
-    500
-  )
-
-const play = humanPlaysWhite => game => board => {
-  if (game.turn() === (humanPlaysWhite ? 'b' : 'w')) {
-    getComputerMove(game)
+const play = human => game => board => {
+  if (!game.game_over() && game.turn() !== human) {
+    game.move(getBestMove(game))
     board.position(game.fen())
   }
 
   return game.game_over()
     ? true
-    : waitAndPlayAgain(humanPlaysWhite)(game)(board)
+    : false
 }
 
 const run = (color) => {
@@ -108,22 +107,23 @@ const run = (color) => {
   if (!window.ChessBoard) return console.error('Could not find ChessBoard')
 
   const game = new Chess()
-  const humanPlaysWhite = color
-    ? color === 'white'
-    : Math.floor(Math.random() * 2)
+  const human = color
+    ? color === 'white' ? 'w' : 'b'
+    : ['w', 'b'][Math.floor(Math.random() * 2)]
 
   const options = {
     position: 'start',
-    orientation: humanPlaysWhite ? 'white' : 'black',
+    orientation: color || (human === 'w' ? 'white' : 'black'),
     draggable: true,
     onDragStart: onDragStart(game),
     onDrop: onDrop(game),
     onSnapEnd: onSnapEnd(game),
+    onChange: onChange(human)(game),
   }
 
   board = new ChessBoard('board', options)
 
-  return window.setTimeout(play(humanPlaysWhite)(game).bind(null, (board)), 500)
+  return play(human)(game)(board)
 }
 
 run('white')
