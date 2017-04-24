@@ -52,7 +52,15 @@ const scorePosition = fen => {
 
 const evaluateMove = game => move => {
   game.move(move)
-  const score = scorePosition(game.fen())
+  const score =
+    game.in_checkmate()
+      ? game.turn() === 'w'
+        ? 1000
+        : - 1000
+      : game.in_stalemate() || game.in_draw()
+        ? 0
+        : scorePosition(game.fen())
+
   game.undo()
   return score
 }
